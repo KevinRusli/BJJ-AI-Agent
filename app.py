@@ -39,9 +39,9 @@ except (KeyError, AttributeError):
     st.stop() 
 
 # --- BJJ Class scheduling constants ---
-OPERATING_START_HOUR = 6    # 6 pagi 
-OPERATING_END_HOUR = 22     # 10 malam (22:00)
-CLASS_DURATION_MINUTES = 90 # Durasi kelas BJJ default dalam menit
+OPERATING_START_HOUR = 7    # 7 pagi (sesuai Google Apps Script)
+OPERATING_END_HOUR = 21     # 9 malam (21:00) (sesuai Google Apps Script)
+CLASS_DURATION_MINUTES = 60 # Durasi kelas BJJ sesuai Google Apps Script (60 menit)
 TRIAL_FEE = 0 # Trial class gratis
 
 # --- Fungsi Validasi Jam Operasional ---
@@ -79,14 +79,14 @@ def book_trial_class(nama_klien: str, kontak_klien: str, tanggal: str, jam: str,
         requested_date = datetime.strptime(tanggal, "%Y-%m-%d").date()
         today = datetime.now().date()
         if requested_date < today:
-            return f"Error: Tanggal '{tanggal}' sudah berlalu. Mohon pilih tanggal di masa sekarang atau masa depan."
+            return f"Tanggal '{tanggal}' sudah berlalu. Pilih tanggal hari ini atau ke depan ya! 📅"
         
         datetime.strptime(f"{tanggal} {jam}", "%Y-%m-%d %H:%M")
     except ValueError:
-        return f"Error: Format tanggal '{tanggal}' atau jam '{jam}' tidak valid. Gunakan YYYY-MM-DD dan HH:MM."
+        return f"Format tanggal atau jam kurang tepat. Gunakan format YYYY-MM-DD dan HH:MM ya! 😊"
 
     if not is_within_operating_hours(tanggal, jam):
-        return f"Maaf, waktu yang diminta ({jam}) berada di luar jam operasional kami (Pukul {OPERATING_START_HOUR}:00 - {OPERATING_END_HOUR}:00). Mohon pilih waktu antara pukul {OPERATING_START_HOUR}:00 hingga {OPERATING_END_HOUR}:00."
+        return f"Maaf, jam {jam} di luar operasional kami (Pukul {OPERATING_START_HOUR}:00 - {OPERATING_END_HOUR}:00). Pilih waktu di antara jam operasional ya! ⏰"
 
     availability_response = check_class_availability(tanggal, jam, jenis_kelas)
     if "tidak tersedia" in availability_response.lower() or "slot sudah terisi" in availability_response.lower():
@@ -97,10 +97,8 @@ def book_trial_class(nama_klien: str, kontak_klien: str, tanggal: str, jam: str,
         "nama_klien": nama_klien,
         "kontak_klien": kontak_klien,
         "tanggal": tanggal,
-        "waktu": jam, 
-        "nominal_dp": TRIAL_FEE,
-        "bukti_tf_link": "", 
-        "catatan_klien": f"Trial Class - {jenis_kelas}. {catatan_tambahan}" 
+        "waktu": jam,
+        "catatan_klien": f"Trial Class - {jenis_kelas}. {catatan_tambahan}".strip()
     }
 
     try:
@@ -110,16 +108,16 @@ def book_trial_class(nama_klien: str, kontak_klien: str, tanggal: str, jam: str,
         script_response = response.json() 
 
         if script_response.get("status") == "success":
-            return f"Trial class booking untuk {nama_klien} pada {tanggal} jam {jam} untuk kelas {jenis_kelas} berhasil dicatat. Gratis untuk trial pertama!"
+            return f"✅ Trial class booking berhasil!\n\n👤 Nama: {nama_klien}\n📅 Tanggal: {tanggal}\n⏰ Jam: {jam}\n🥋 Kelas: {jenis_kelas}\n\n🆓 Trial class GRATIS untuk new member!"
         else:
             error_message = script_response.get('message', 'Terjadi kesalahan tidak diketahui di sistem booking.')
-            return f"Gagal mencatat booking di Google Sheets: {error_message}"
+            return f"❌ Gagal booking: {error_message}"
     except requests.exceptions.RequestException as e:
         st.error(f"[Backend Error] Error calling Apps Script webhook for book_trial_class: {e}")
-        return f"Maaf, terjadi masalah koneksi saat mencatat booking. Mohon coba lagi nanti."
+        return f"🔧 Terjadi masalah koneksi. Mohon coba lagi nanti atau hubungi admin."
     except json.JSONDecodeError as e:
         st.error(f"[Backend Error] Error decoding JSON from Apps Script for book_trial_class: {e}, Response content: {response.text}")
-        return "Maaf, respon tidak valid dari sistem booking Apps Script."
+        return "🔧 Respon sistem tidak valid. Mohon coba lagi atau hubungi admin."
 
 @tool
 def cancel_booking(nama_klien: str, tanggal: str, jam: str) -> str:
@@ -130,11 +128,11 @@ def cancel_booking(nama_klien: str, tanggal: str, jam: str) -> str:
         requested_date = datetime.strptime(tanggal, "%Y-%m-%d").date()
         today = datetime.now().date()
         if requested_date < today:
-            return f"Error: Tanggal '{tanggal}' sudah berlalu. Booking lama tidak bisa dibatalkan jika tanggalnya sudah lewat."
+            return f"Tanggal '{tanggal}' sudah berlalu. Booking yang sudah lewat tidak bisa dibatalkan ya! 📅"
             
         datetime.strptime(f"{tanggal} {jam}", "%Y-%m-%d %H:%M")
     except ValueError:
-        return f"Error: Format tanggal '{tanggal}' atau jam '{jam}' tidak valid. Gunakan YYYY-MM-DD dan HH:MM."
+        return f"Format tanggal atau jam kurang tepat. Gunakan format YYYY-MM-DD dan HH:MM ya! 😊"
 
     payload = {
         "action": "delete_booking", 
@@ -150,17 +148,17 @@ def cancel_booking(nama_klien: str, tanggal: str, jam: str) -> str:
         script_response = response.json()
 
         if script_response.get("status") == "success":
-            return f"Booking untuk {nama_klien} pada {tanggal} jam {jam} berhasil dibatalkan."
+            return f"✅ Booking berhasil dibatalkan!\n\n👤 Nama: {nama_klien}\n📅 Tanggal: {tanggal}\n⏰ Jam: {jam}\n\nJika ingin book lagi, tinggal chat aja ya! 😊"
         else:
             error_message = script_response.get('message', 'Terjadi kesalahan tidak diketahui saat membatalkan booking.')
-            return f"Gagal membatalkan booking: {error_message}"
+            return f"❌ Gagal membatalkan: {error_message}"
 
     except requests.exceptions.RequestException as e:
         st.error(f"[Backend Error] Error calling Apps Script webhook for cancel_booking: {e}")
-        return f"Maaf, terjadi masalah koneksi saat membatalkan booking. Mohon coba lagi nanti."
+        return f"🔧 Terjadi masalah koneksi. Mohon coba lagi nanti atau hubungi admin."
     except json.JSONDecodeError as e:
         st.error(f"[Backend Error] Error decoding JSON from Apps Script for cancel_booking: {e}, Response content: {response.text}")
-        return "Maaf, respon tidak valid dari sistem pembatalan."
+        return "🔧 Respon sistem tidak valid. Mohon coba lagi atau hubungi admin."
 
 @tool
 def check_class_availability(tanggal: str, jam: str, jenis_kelas: str = "") -> str:
@@ -171,14 +169,14 @@ def check_class_availability(tanggal: str, jam: str, jenis_kelas: str = "") -> s
         requested_date = datetime.strptime(tanggal, "%Y-%m-%d").date()
         today = datetime.now().date()
         if requested_date < today:
-            return f"Error: Tanggal '{tanggal}' sudah berlalu. Mohon pilih tanggal di masa sekarang atau masa depan."
+            return f"Tanggal '{tanggal}' sudah berlalu. Pilih tanggal hari ini atau ke depan ya! 📅"
             
         datetime.strptime(f"{tanggal} {jam}", "%Y-%m-%d %H:%M")
     except ValueError:
-        return f"Error: Format tanggal '{tanggal}' atau jam '{jam}' tidak valid. Gunakan YYYY-MM-DD dan HH:MM."
+        return f"Format tanggal atau jam kurang tepat. Gunakan format YYYY-MM-DD dan HH:MM ya! 😊"
     
     if not is_within_operating_hours(tanggal, jam):
-        return f"Maaf, waktu yang diminta ({jam}) berada di luar jam operasional kami (Pukul {OPERATING_START_HOUR}:00 - {OPERATING_END_HOUR}:00). Mohon pilih waktu antara pukul {OPERATING_START_HOUR}:00 hingga {OPERATING_END_HOUR}:00."
+        return f"Maaf, jam {jam} di luar operasional kami (Pukul {OPERATING_START_HOUR}:00 - {OPERATING_END_HOUR}:00). Pilih waktu di antara jam operasional ya! ⏰"
 
     payload = {
         "action": "check_availability", 
@@ -196,18 +194,18 @@ def check_class_availability(tanggal: str, jam: str, jenis_kelas: str = "") -> s
         if script_response.get("status") == "success":
             is_available = script_response.get("available", False)
             if is_available:
-                return f"Slot waktu {tanggal} jam {jam} tersedia untuk booking kelas BJJ."
+                return f"✅ Slot {tanggal} jam {jam} tersedia! Mau booking sekarang? 😊"
             else:
-                return f"Maaf, slot waktu {tanggal} jam {jam} tidak tersedia atau sudah terisi."
+                return f"❌ Maaf, slot {tanggal} jam {jam} sudah terisi. Coba pilih waktu lain ya! 🕐"
         else:
             error_message = script_response.get('message', 'Terjadi kesalahan tidak diketahui saat memeriksa ketersediaan.')
-            return f"Gagal memeriksa ketersediaan: {error_message}"
+            return f"🔧 Gagal cek ketersediaan: {error_message}"
     except requests.exceptions.RequestException as e:
         st.error(f"[Backend Error] Error calling Apps Script webhook for check_class_availability: {e}")
-        return f"Maaf, terjadi masalah koneksi saat memeriksa ketersediaan. Mohon coba lagi nanti."
+        return f"🔧 Terjadi masalah koneksi. Mohon coba lagi nanti atau hubungi admin."
     except json.JSONDecodeError as e:
         st.error(f"[Backend Error] Error decoding JSON from Apps Script for check_class_availability: {e}, Response content: {response.text}")
-        return "Maaf, respon tidak valid dari sistem pengecekan ketersediaan." 
+        return "🔧 Respon sistem tidak valid. Mohon coba lagi atau hubungi admin." 
 
         st.error(f"[Backend Error] Error decoding JSON from Apps Script for check_class_availability: {e}, Response content: {response.text}")
         return "Maaf, respon tidak valid dari sistem pengecekan ketersediaan."
@@ -319,29 +317,23 @@ def get_chatbot_response(user_prompt: str, chat_history: list = None) -> str:
         {"role": "system", "content": f"""
         {SYSTEM_PROMPT}
         
-        **TAMBAHAN FITUR BOOKING TRIAL CLASS:**
+        **BOOKING FEATURES:**
+        ✅ Trial class booking (GRATIS!)
+        ✅ Check ketersediaan slot  
+        ✅ Cancel booking
         
-        **Untuk Trial Class Booking:**
-        * **GRATIS** - Trial class pertama gratis untuk new members! 🆓
-        * Tanyakan: Nama lengkap, kontak (WA/email), tanggal yang diinginkan, jam yang diinginkan, dan jenis kelas
-        * **Jenis kelas yang tersedia untuk trial:**
-          - GI Intro Class (wajib untuk pemula tanpa pengalaman BJJ)
-          - GI Beginner (sudah punya basic)
-          - GI Advance (sudah experienced, min 2 weeks training)
-          - Kids Class A (4-9 tahun)
-          - Kids Class B (8-14 tahun)  
-          - No GI Session
-        * **PENTING:** Konversi format tanggal ke YYYY-MM-DD dan jam ke HH:MM secara internal
-        * **Jam Operasional:** {OPERATING_START_HOUR}:00 - {OPERATING_END_HOUR}:00 setiap hari
-        * Setelah booking berhasil, berikan informasi lokasi yang sesuai dan contact person
+        **BOOKING FLOW:**
+        1. Tanya nama, kontak, tanggal, jam, jenis kelas
+        2. Convert format: tanggal ke YYYY-MM-DD, jam ke HH:MM
+        3. Jam operasional: 07:00-21:00 daily
+        4. Durasi kelas: 60 menit
+        5. Sukses booking → kasih info lokasi & contact
         
-        **Untuk Pembatalan:**
-        * Bisa dibatalkan kapan saja sebelum jadwal kelas
-        * Tanyakan nama, tanggal, dan jam booking yang ingin dibatalkan
-        
-        **Untuk Cek Ketersediaan:**
-        * Cek ketersediaan slot sebelum booking
-        * Durasi kelas BJJ adalah {CLASS_DURATION_MINUTES} menit
+        **STYLE GUIDE:**
+        - Max 2-3 kalimat per response
+        - Pakai emoji yang tepat
+        - Friendly & antusias! 
+        - Info panjang → pecah jadi beberapa chat
         """}
     ]
 
