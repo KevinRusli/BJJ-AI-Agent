@@ -17,13 +17,13 @@ Selamat datang di Chatbot resmi GRIND Jiujitsu Indonesia! Chatbot ini dirancang 
 * **OpenAI GPT Models**: Otak di balik percakapan cerdas chatbot.
 * **Knowledge Base System**: Comprehensive BJJ information database.
 
-## Cara Menggunakan (Untuk Pengembang/Lokal) 🧑‍💻
+## Cara Menggunakan 🧑‍💻
 
 ### Persyaratan
 
 Pastikan Anda memiliki Python 3.8+ terinstal.
 
-### Instalasi
+### Local Development
 
 1.  Clone repositori ini:
     ```bash
@@ -45,11 +45,35 @@ Pastikan Anda memiliki Python 3.8+ terinstal.
     ```
 
 4.  **Konfigurasi Environment Variables:**
-    Buat file `.env` di *root* folder proyek Anda dan isi dengan API Key OpenAI:
+    Copy file `.env.example` ke `.env` dan isi dengan nilai yang sebenarnya:
     ```
     OPENAI_API_KEY="sk-YOUR_OPENAI_API_KEY_HERE"
+    APPS_SCRIPT_WEB_APP_URL="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
     ```
-    *(Ganti dengan API key OpenAI Anda yang sebenarnya)*
+
+### Streamlit Cloud Deployment
+
+1. **Push ke GitHub:** Pastikan semua file sudah di-push ke repository GitHub Anda
+
+2. **Deploy ke Streamlit Cloud:**
+   - Buka [share.streamlit.io](https://share.streamlit.io)
+   - Connect dengan GitHub repository Anda
+   - Pilih repository dan branch (biasanya `main`)
+   - Set main file path: `app.py`
+
+3. **Set Secrets di Streamlit Cloud:**
+   - Buka App settings > Secrets
+   - Tambahkan secrets dalam format TOML:
+   ```toml
+   OPENAI_API_KEY = "sk-your-openai-api-key-here"
+   APPS_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/your-script-id/exec"
+   ```
+
+4. **Google Apps Script Setup:**
+   - Copy kode Google Apps Script yang disediakan
+   - Buat Google Apps Script project baru
+   - Deploy sebagai Web App dengan akses "Anyone"
+   - Copy URL deployment ke APPS_SCRIPT_WEB_APP_URL
 
 ### Menjalankan Aplikasi
 
